@@ -1,26 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
 @import "tailwindcss";
 
+/* ── Design tokens ────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    /* Light theme */
+    --bg:          #F5F4F0;
+    --bg-surface:  #FFFFFF;
+    --bg-elevated: #EEECEA;
+    --border:      #E2E0DB;
+    --text:        #1A1917;
+    --text-muted:  #6B6860;
+    --accent:      #5C4EFA;
+    --accent-soft: #EAE8FF;
+    --green:       #12A87A;
+    --red:         #E5484D;
+    --amber:       #F59E0B;
+
+    --font-display: 'Syne', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+
+    --radius:    10px;
+    --radius-lg: 16px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.10);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+    --bg:          #0E0E10;
+    --bg-surface:  #18181C;
+    --bg-elevated: #222228;
+    --border:      #2E2E36;
+    --text:        #F0EFF0;
+    --text-muted:  #888896;
+    --accent:      #7B6EFF;
+    --accent-soft: #1E1C40;
+    --green:       #16C48A;
+    --red:         #F2545B;
+    --amber:       #FBBF24;
+
+    --shadow:    0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Utilities ────────────────────────────────────────────────────────────── */
+@layer utilities {
+    .bg-surface    { background-color: var(--bg-surface); }
+    .bg-elevated   { background-color: var(--bg-elevated); }
+    .border-token  { border-color: var(--border); }
+    .text-token    { color: var(--text); }
+    .text-muted    { color: var(--text-muted); }
+    .accent        { color: var(--accent); }
+    .bg-accent     { background-color: var(--accent); }
+    .bg-accent-soft { background-color: var(--accent-soft); }
+
+    .font-display  { font-family: var(--font-display); }
+    .font-body     { font-family: var(--font-body); }
+
+    .shadow-token  { box-shadow: var(--shadow); }
+    .shadow-md-token { box-shadow: var(--shadow-md); }
+
+    .radius        { border-radius: var(--radius); }
+    .radius-lg     { border-radius: var(--radius-lg); }
+
+    /* Subtle grid bg for landing/auth pages */
+    .bg-grid {
+        background-image:
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 32px 32px;
+    }
 }
