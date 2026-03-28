@@ -1,50 +1,54 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Link from "next/link";
 import {
     Flame, Clock, Zap, BookOpen, ArrowRight, TrendingUp,
 } from "lucide-react";
-import { sessionApi, roomApi } from "@/lib/api";
+import { roomApi } from "@/lib/api";
+import { fetchStats, fetchChartData } from "@/store/slices/sessionSlice";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/index";
-import { Spinner } from "@/components/ui/index";
+import { Badge, Spinner } from "@/components/ui/index";
 import { StudyChart } from "@/components/dashboard/StudyChart";
 import { StreakCalendar } from "@/components/dashboard/StreakCalendar";
+import { SessionHistory } from "@/components/dashboard/SessionHistory";
 import { formatMinutes, getStreakEmoji, timeAgo } from "@/lib/utils";
-import type { RootState } from "@/store";
-import type { UserStats, ChartDataPoint, Room } from "@/types";
+import type { RootState, AppDispatch } from "@/store";
+import type { Room } from "@/types";
 
 export default function DashboardPage() {
+    const dispatch = useDispatch<AppDispatch>();
     const user = useSelector((s: RootState) => s.user.data);
-    const [stats, setStats] = useState<UserStats | null>(null);
-    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+    const { stats, chartData, loading: statsLoading } = useSelector((s: RootState) => s.session);
+    
     const [myRooms, setMyRooms] = useState<Room[]>([]);
     const [chartRange, setChartRange] = useState<"week" | "month">("week");
-    const [loading, setLoading] = useState(true);
+    const [loadingRooms, setLoadingRooms] = useState(true);
 
     useEffect(() => {
-        const load = async () => {
+        dispatch(fetchStats());
+    }, [dispatch]);
+
+    useEffect(() => {
+        dispatch(fetchChartData(chartRange));
+    }, [dispatch, chartRange]);
+
+    useEffect(() => {
+        const loadRooms = async () => {
             try {
-                const [statsRes, chartRes, roomsRes] = await Promise.all([
-                    sessionApi.get("/api/sessions/stats"),
-                    sessionApi.get(`/api/sessions/charts?range=${chartRange}`),
-                    roomApi.get("/api/rooms/my-rooms"),
-                ]);
-                setStats(statsRes.data.stats);
-                setChartData(chartRes.data.data);
-                setMyRooms(roomsRes.data.rooms.slice(0, 4));
+                const res = await roomApi.get("/api/rooms/my-rooms");
+                setMyRooms(res.data.rooms.slice(0, 4));
             } catch {
-                // silently fail — empty state shown
+                // silently fail
             } finally {
-                setLoading(false);
+                setLoadingRooms(false);
             }
         };
-        load();
-    }, [chartRange]);
+        loadRooms();
+    }, []);
 
-    if (loading) {
+    if (statsLoading && !stats) {
         return (
             <div className="flex justify-center py-20">
                 <Spinner size="lg" />
@@ -184,8 +188,19 @@ export default function DashboardPage() {
                     <CardTitle>Study Calendar</CardTitle>
                     <span className="text-xs text-[var(--text-muted)]">Last 12 weeks</span>
                 </CardHeader>
-                <StreakCalendar chartData={chartData} />
+            <StreakCalendar chartData={chartData} />
             </Card>
+
+            {/* ── Session History ─────────────────────────────────────────── */}
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                    <Clock size={20} className="text-[var(--accent)]" />
+                    <h2 className="font-display text-xl font-bold text-[var(--text)] text-left">Study Logs</h2>
+                </div>
+                <Card>
+                    <SessionHistory />
+                </Card>
+            </div>
 
         </div>
     );

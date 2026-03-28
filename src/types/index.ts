@@ -49,6 +49,7 @@ export type FileType = "image" | "audio" | "video" | null;
 
 export interface Message {
     id: string;
+    _id?: string;
     roomId: string;
     userId: string;
     userData: { userId: string; name: string; avatar: string } | null;

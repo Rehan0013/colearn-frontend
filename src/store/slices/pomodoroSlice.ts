@@ -15,7 +15,8 @@ const pomodoroSlice = createSlice({
     initialState,
     reducers: {
         setPomodoroState(state, action: PayloadAction<PomodoroState>) {
-            return action.payload;
+            if (!action.payload) return state;
+            return { ...state, ...action.payload };
         },
         tick(state, action: PayloadAction<number>) {
             state.remaining = action.payload;

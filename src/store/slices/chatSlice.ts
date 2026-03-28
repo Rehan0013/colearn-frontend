@@ -38,7 +38,7 @@ const chatSlice = createSlice({
             state.messages.push(action.payload);
         },
         updateReactions(state, action: PayloadAction<{ messageId: string; reactions: Record<string, string[]> }>) {
-            const msg = state.messages.find(m => m.id === action.payload.messageId);
+            const msg = state.messages.find(m => m.id === action.payload.messageId || m._id === action.payload.messageId);
             if (msg) msg.reactions = action.payload.reactions;
         },
         setTypingUser(state, action: PayloadAction<{ userId: string; name: string; isTyping: boolean }>) {

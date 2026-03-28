@@ -6,10 +6,11 @@ import {
     setMessages, addMessage, updateReactions, setTypingUser,
 } from "@/store/slices/chatSlice";
 import {
-    setPresenceUsers, addPresenceUser, removePresenceUser,
+    setPresenceUsers, addPresenceUser, removePresenceUser, setSocketConnected,
 } from "@/store/slices/roomSlice";
 import { setPomodoroState, tick } from "@/store/slices/pomodoroSlice";
 import { remoteEdit } from "@/store/slices/notesSlice";
+import { addNotification } from "@/store/slices/notificationSlice";
 import type { RootState } from "@/store";
 import toast from "react-hot-toast";
 
@@ -30,17 +31,42 @@ export const useSocket = (roomId: string) => {
             avatar: user.avatar,
         };
 
-        // ── Join room ──────────────────────────────────────────────────────────
-        socket.emit("presence:join", { roomId, userData });
-        socket.emit("chat:history", { roomId });
-        socket.emit("notes:get", { roomId });
-        socket.emit("pomodoro:get", { roomId });
+        const joinAndSync = () => {
+            socket.emit("presence:join", { roomId, userData });
+            socket.emit("chat:history", { roomId });
+            socket.emit("notes:get", { roomId });
+            socket.emit("pomodoro:get", { roomId });
+        };
+
+        // ── Socket Connection Events ──────────────────────────────────────────
+        socket.on("connect", () => {
+            dispatch(setSocketConnected(true));
+            joinAndSync(); // Re-join on reconnection
+        });
+
+        socket.on("disconnect", () => {
+            dispatch(setSocketConnected(false));
+            toast.error("Disconnected from room", { id: "socket-disconnect" });
+        });
+
+        // ── Initial Join (if already connected) ────────────────────────────────
+        if (socket.connected) {
+            dispatch(setSocketConnected(true));
+            joinAndSync();
+        }
 
         // ── Presence ───────────────────────────────────────────────────────────
         socket.on("presence:update", ({ users }) => dispatch(setPresenceUsers(users)));
         socket.on("presence:joined", ({ user: u }) => {
             dispatch(addPresenceUser(u));
-            toast(`${u.name} joined`, { icon: "👋", duration: 2000 });
+            if (u.userId !== user._id) {
+                toast(`${u.name} joined`, { icon: "👋", duration: 2000 });
+                dispatch(addNotification({
+                    type: "info",
+                    title: "New Member",
+                    message: `${u.name} joined the room`,
+                }));
+            }
         });
         socket.on("presence:left", ({ userId }) => dispatch(removePresenceUser(userId)));
 
@@ -48,7 +74,9 @@ export const useSocket = (roomId: string) => {
         socket.on("chat:history", ({ messages, hasMore }) =>
             dispatch(setMessages({ messages, hasMore }))
         );
-        socket.on("chat:receive", (msg) => dispatch(addMessage(msg)));
+        socket.on("chat:receive", (msg) => {
+            dispatch(addMessage(msg));
+        });
         socket.on("chat:react:update", ({ messageId, reactions }) =>
             dispatch(updateReactions({ messageId, reactions }))
         );
@@ -60,9 +88,15 @@ export const useSocket = (roomId: string) => {
         socket.on("pomodoro:state", (state) => dispatch(setPomodoroState(state)));
         socket.on("pomodoro:tick", ({ remaining }) => dispatch(tick(remaining)));
         socket.on("pomodoro:done", ({ mode }) => {
-            toast(`${mode === "focus" ? "Focus" : "Break"} session complete!`, {
+            const label = mode === "focus" ? "Focus" : "Break";
+            toast(`${label} session complete!`, {
                 icon: mode === "focus" ? "🎯" : "☕",
             });
+            dispatch(addNotification({
+                type: "success",
+                title: "Timer Complete",
+                message: `${label} session has ended.`,
+            }));
         });
 
         // ── Notes ──────────────────────────────────────────────────────────────
@@ -76,6 +110,8 @@ export const useSocket = (roomId: string) => {
         // ── Cleanup ────────────────────────────────────────────────────────────
         return () => {
             socket.emit("presence:leave", { roomId });
+            socket.off("connect");
+            socket.off("disconnect");
             socket.off("presence:update");
             socket.off("presence:joined");
             socket.off("presence:left");
@@ -91,7 +127,7 @@ export const useSocket = (roomId: string) => {
             disconnectSocket();
             joined.current = false;
         };
-    }, [roomId, user]);
+    }, [roomId, user, dispatch]);
 
     // ── Action helpers ─────────────────────────────────────────────────────────
     const sendMessage = (content: string, fileUrl?: string, fileType?: string) => {

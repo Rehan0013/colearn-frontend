@@ -104,7 +104,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex min-h-screen bg-[var(--bg)] font-body selection:bg-[var(--accent)] selection:text-white">
-            
+
             {/* Left Panel - Premium Decorative Background (Hidden on small screens) */}
             <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-[var(--bg)] border-r border-[var(--border)]">
                 {/* Dynamic animated abstract background */}
@@ -133,7 +133,7 @@ export default function LoginPage() {
                         <p className="text-[var(--text-muted)] text-lg leading-relaxed mb-8">
                             Join thousands of students learning collectively through interactive, real-time study rooms and productive pomodoro sessions.
                         </p>
-                        
+
                         {/* Social Proof Widget */}
                         <div className="flex flex-col xl:flex-row xl:items-center gap-4 border-t border-[var(--border)] pt-6 mt-6">
                             <div className="flex -space-x-3">
@@ -162,14 +162,14 @@ export default function LoginPage() {
                         co<span className="text-[var(--accent)]">learn</span>
                     </Link>
                 </div>
-                
+
                 {/* Theme toggle pinned top right */}
                 <div className="absolute top-6 right-6 z-20">
                     <ThemeToggle />
                 </div>
 
                 <div className="w-full max-w-[420px] mx-auto px-6 py-12">
-                    
+
                     {/* Header */}
                     <div className="mb-10 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h1 className="font-display text-3xl font-bold text-[var(--text)] mb-3">Welcome back</h1>
@@ -192,40 +192,40 @@ export default function LoginPage() {
 
                     {/* Main Form */}
                     <form onSubmit={handleSubmit} className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
-                        <Inp 
-                            label="Email" 
-                            name="email" 
-                            type="email" 
-                            placeholder="you@email.com" 
-                            value={form.email} 
-                            onChange={handleChange} 
-                            error={errors.email} 
-                            leftIcon={<Mail size={18} />} 
-                            autoComplete="email" 
-                            required 
+                        <Inp
+                            label="Email"
+                            name="email"
+                            type="email"
+                            placeholder="you@email.com"
+                            value={form.email}
+                            onChange={handleChange}
+                            error={errors.email}
+                            leftIcon={<Mail size={18} />}
+                            autoComplete="email"
+                            required
                         />
-                        
+
                         <div className="flex flex-col gap-2">
-                            <Inp 
-                                label="Password" 
-                                name="password" 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder="••••••••" 
-                                value={form.password} 
-                                onChange={handleChange} 
-                                error={errors.password} 
+                            <Inp
+                                label="Password"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
+                                value={form.password}
+                                onChange={handleChange}
+                                error={errors.password}
                                 leftIcon={<Lock size={18} />}
                                 rightIcon={
                                     <button type="button" onClick={() => setShowPassword(p => !p)} className="cursor-pointer text-[var(--text-muted)] hover:text-[var(--text)] transition-colors p-1" aria-label="Toggle password visibility">
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 }
-                                autoComplete="current-password" 
-                                required 
+                                autoComplete="current-password"
+                                required
                             />
                             <div className="flex justify-between items-center mt-1 px-1">
                                 <label className="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] bg-[var(--bg-surface)] cursor-pointer" />
+                                    <input type="checkbox" className="w-4 h-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)] bg-[var(--bg-surface)] cursor-pointer" checked disabled />
                                     <span className="text-sm text-[var(--text-muted)] group-hover:text-[var(--text)] transition-colors">Remember me</span>
                                 </label>
                                 <Link href="/forgot-password" className="text-sm font-medium text-[var(--accent)] hover:text-opacity-80 transition-colors">

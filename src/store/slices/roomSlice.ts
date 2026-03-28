@@ -8,6 +8,7 @@ interface RoomState {
     presenceUsers: PresenceUser[];
     loading: boolean;
     error: string | null;
+    isConnected: boolean;
 }
 
 const initialState: RoomState = {
@@ -16,6 +17,7 @@ const initialState: RoomState = {
     presenceUsers: [],
     loading: false,
     error: null,
+    isConnected: false,
 };
 
 export const fetchPublicRooms = createAsyncThunk(
@@ -54,6 +56,30 @@ export const fetchRoomById = createAsyncThunk(
     }
 );
 
+export const updateRoom = createAsyncThunk(
+    "room/update",
+    async ({ roomId, data }: { roomId: string; data: Partial<Room> }, { rejectWithValue }) => {
+        try {
+            const res = await roomApi.patch(`/api/rooms/${roomId}`, data);
+            return res.data.room as Room;
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || "Failed to update room");
+        }
+    }
+);
+
+export const deleteRoom = createAsyncThunk(
+    "room/delete",
+    async (roomId: string, { rejectWithValue }) => {
+        try {
+            await roomApi.delete(`/api/rooms/${roomId}`);
+            return roomId;
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || "Failed to delete room");
+        }
+    }
+);
+
 const roomSlice = createSlice({
     name: "room",
     initialState,
@@ -75,6 +101,9 @@ const roomSlice = createSlice({
         removePresenceUser(state, action: PayloadAction<string>) {
             state.presenceUsers = state.presenceUsers.filter(u => u.userId !== action.payload);
         },
+        setSocketConnected(state, action: PayloadAction<boolean>) {
+            state.isConnected = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -93,6 +122,14 @@ const roomSlice = createSlice({
             .addCase(fetchRoomById.fulfilled, (state, action) => {
                 state.current = action.payload;
                 state.loading = false;
+            })
+            .addCase(updateRoom.fulfilled, (state, action) => {
+                state.current = action.payload;
+                state.list = state.list.map(r => r._id === action.payload._id ? action.payload : r);
+            })
+            .addCase(deleteRoom.fulfilled, (state, action) => {
+                if (state.current?._id === action.payload) state.current = null;
+                state.list = state.list.filter(r => r._id !== action.payload);
             });
     },
 });
@@ -100,5 +137,6 @@ const roomSlice = createSlice({
 export const {
     setCurrentRoom, clearCurrentRoom,
     setPresenceUsers, addPresenceUser, removePresenceUser,
+    setSocketConnected,
 } = roomSlice.actions;
 export default roomSlice.reducer;

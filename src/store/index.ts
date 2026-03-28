@@ -4,6 +4,8 @@ import roomReducer from "./slices/roomSlice";
 import chatReducer from "./slices/chatSlice";
 import notesReducer from "./slices/notesSlice";
 import pomodoroReducer from "./slices/pomodoroSlice";
+import sessionReducer from "./slices/sessionSlice";
+import notificationReducer from "./slices/notificationSlice";
 
 export const store = configureStore({
     reducer: {
@@ -12,6 +14,8 @@ export const store = configureStore({
         chat: chatReducer,
         notes: notesReducer,
         pomodoro: pomodoroReducer,
+        session: sessionReducer,
+        notification: notificationReducer,
     },
 });
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
@@ -48,7 +49,8 @@ export const Navbar = () => {
                 </nav>
 
                 {/* Right side */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                    {user && <NotificationBell />}
                     <ThemeToggle />
                     {user && (
                         <div className="hidden md:flex items-center gap-2">

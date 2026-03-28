@@ -31,7 +31,7 @@ export const Avatar = ({
     <div className={cn("relative flex-shrink-0", className)}>
         {src ? (
             <img
-                src={src}
+                src={src || undefined}
                 alt={`${firstName} ${lastName}`}
                 className={cn("rounded-full object-cover bg-[var(--bg-elevated)]", sizes[size])}
             />

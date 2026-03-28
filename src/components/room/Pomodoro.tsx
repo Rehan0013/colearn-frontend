@@ -18,9 +18,12 @@ const modeConfig: Record<PomodoroMode, { label: string; color: string }> = {
 };
 
 export const Pomodoro = ({ startPomodoro, pausePomodoro, resetPomodoro }: Props) => {
-    const { remaining, duration, isRunning, mode } = useSelector(
-        (s: RootState) => s.pomodoro
-    );
+    const pomodoro = useSelector((s: RootState) => s.pomodoro);
+    
+    // Safety guard
+    if (!pomodoro) return null;
+
+    const { remaining, duration, isRunning, mode } = pomodoro;
 
     const progress = duration > 0 ? ((duration - remaining) / duration) * 100 : 0;
     const config = modeConfig[mode];

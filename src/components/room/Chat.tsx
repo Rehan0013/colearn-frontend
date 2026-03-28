@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { Send, Paperclip, Smile } from "lucide-react";
+import { Send, Paperclip, Smile, Loader2, Play, Volume2, Maximize2 } from "lucide-react";
 import type { RootState } from "@/store";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn, timeAgo } from "@/lib/utils";
 import type { Message } from "@/types";
+import { chatApi } from "@/lib/api";
+import toast from "react-hot-toast";
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "🎉"];
 
@@ -21,7 +23,9 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
     const user = useSelector((s: RootState) => s.user.data);
     const [input, setInput] = useState("");
     const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimer = useRef<NodeJS.Timeout | undefined>(undefined);
 
     // Auto-scroll to bottom on new message
@@ -51,6 +55,36 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
         typingTimer.current = setTimeout(() => sendTyping(false), 2000);
     };
 
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Size check: 50MB
+        if (file.size > 50 * 1024 * 1024) {
+            toast.error("File is too large (max 50MB)");
+            return;
+        }
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await chatApi.post("/api/chat/upload", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+
+            if (res.data.success) {
+                sendMessage("", res.data.url, res.data.type);
+            }
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "File upload failed");
+        } finally {
+            setUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
     const isMine = (msg: Message) => msg.userId === user?._id;
 
     return (
@@ -68,7 +102,7 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
 
                 {messages.map((msg) => (
                     <div
-                        key={msg.id}
+                        key={msg.id || msg._id}
                         className={cn(
                             "flex gap-2 group",
                             isMine(msg) && "flex-row-reverse"
@@ -96,30 +130,49 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
 
                             {/* Bubble */}
                             <div className={cn(
-                                "relative px-3 py-2 rounded-2xl text-sm leading-relaxed",
+                                "relative rounded-2xl text-sm leading-relaxed overflow-hidden",
                                 isMine(msg)
                                     ? "bg-[var(--accent)] text-white rounded-tr-sm"
-                                    : "bg-[var(--bg-elevated)] text-[var(--text)] rounded-tl-sm"
+                                    : "bg-[var(--bg-elevated)] text-[var(--text)] rounded-tl-sm",
+                                (msg.fileUrl) ? "p-1" : "px-3 py-2"
                             )}>
-                                {/* File */}
-                                {msg.fileUrl && msg.fileType === "image" && (
-                                    <img
-                                        src={msg.fileUrl}
-                                        alt="attachment"
-                                        className="max-w-full rounded-lg mb-1"
-                                    />
+                                {/* File Content */}
+                                {msg.fileUrl && (
+                                    <div className="mb-1 rounded-xl overflow-hidden bg-black/5">
+                                        {msg.fileType === "image" && (
+                                            <img
+                                                src={msg.fileUrl || undefined}
+                                                alt="attachment"
+                                                className="max-w-full h-auto object-cover hover:scale-[1.02] transition-transform cursor-pointer"
+                                                onClick={() => window.open(msg.fileUrl || undefined, "_blank")}
+                                            />
+                                        )}
+                                        {msg.fileType === "video" && (
+                                            <div className="relative group/video">
+                                                <video 
+                                                    controls 
+                                                    src={msg.fileUrl || undefined} 
+                                                    className="max-w-full aspect-video bg-black" 
+                                                />
+                                            </div>
+                                        )}
+                                        {msg.fileType === "audio" && (
+                                            <div className="p-2 bg-[var(--bg-surface)] rounded-lg m-1 border border-[var(--border)]">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Volume2 size={14} className="text-[var(--accent)]" />
+                                                    <span className="text-[10px] font-medium truncate opacity-70">Voice/Audio Message</span>
+                                                </div>
+                                                <audio controls src={msg.fileUrl || undefined} className="w-full h-8 scale-90 origin-left" />
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
-                                {msg.fileUrl && msg.fileType === "audio" && (
-                                    <audio controls src={msg.fileUrl} className="max-w-full" />
-                                )}
-                                {msg.fileUrl && msg.fileType === "video" && (
-                                    <video controls src={msg.fileUrl} className="max-w-full rounded-lg" />
-                                )}
-                                {msg.content && <p>{msg.content}</p>}
+                                
+                                {msg.content && <p className={cn(msg.fileUrl && "px-2 pb-1")}>{msg.content}</p>}
 
                                 {/* Time */}
                                 <span className={cn(
-                                    "text-[10px] mt-0.5 block",
+                                    "text-[10px] block px-2 pb-1",
                                     isMine(msg) ? "text-white/60 text-right" : "text-[var(--text-muted)]"
                                 )}>
                                     {timeAgo(msg.createdAt)}
@@ -190,18 +243,41 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
 
             {/* Input */}
             <div className="px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
-                <div className="flex items-end gap-2 bg-[var(--bg-elevated)] rounded-[var(--radius-lg)] px-3 py-2 border border-[var(--border)] focus-within:border-[var(--accent)] transition-all">
+                <div className="flex items-end gap-2 bg-[var(--bg-elevated)] rounded-[var(--radius-lg)] px-3 py-2 border border-[var(--border)] focus-within:border-[var(--accent)] transition-all relative">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        accept="image/*,video/*,audio/*"
+                    />
+                    
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--bg-surface)] transition-all shrink-0"
+                        title="Attach file"
+                    >
+                        {uploading ? (
+                            <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
+                        ) : (
+                            <Paperclip size={16} />
+                        )}
+                    </button>
+
                     <textarea
                         value={input}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        placeholder="Send a message..."
+                        placeholder={uploading ? "Uploading file..." : "Send a message..."}
+                        disabled={uploading}
                         rows={1}
-                        className="flex-1 bg-transparent text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none outline-none max-h-32"
+                        className="flex-1 bg-transparent text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none outline-none max-h-32 py-1"
                     />
+                    
                     <button
                         onClick={handleSend}
-                        disabled={!input.trim()}
+                        disabled={!input.trim() || uploading}
                         className="p-1.5 rounded-lg bg-[var(--accent)] text-white disabled:opacity-40 transition-all hover:opacity-90 shrink-0"
                     >
                         <Send size={15} />
