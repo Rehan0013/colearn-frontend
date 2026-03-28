@@ -44,7 +44,11 @@ export default function RoomPage() {
     const [deleting, setDeleting] = useState(false);
     const [endingSession, setEndingSession] = useState(false);
 
-    const isAdmin = room?.createdBy._id === user?._id;
+    const isAdmin = room?.createdBy && (
+        typeof room.createdBy === "string" 
+            ? room.createdBy === user?._id 
+            : room.createdBy._id === user?._id
+    );
 
     // Connect socket and register all event handlers
     const socketActions = useSocket(roomId);

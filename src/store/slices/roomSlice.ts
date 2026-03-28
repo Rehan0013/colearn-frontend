@@ -116,12 +116,29 @@ const roomSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload as string;
             })
+            .addCase(fetchMyRooms.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(fetchMyRooms.fulfilled, (state, action) => {
+                state.loading = false;
                 state.list = action.payload;
+            })
+            .addCase(fetchMyRooms.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            .addCase(fetchRoomById.pending, (state) => {
+                state.loading = true;
+                state.error = null;
             })
             .addCase(fetchRoomById.fulfilled, (state, action) => {
                 state.current = action.payload;
                 state.loading = false;
+            })
+            .addCase(fetchRoomById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
             })
             .addCase(updateRoom.fulfilled, (state, action) => {
                 state.current = action.payload;

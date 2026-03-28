@@ -24,6 +24,7 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
     const [input, setInput] = useState("");
     const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [pendingFile, setPendingFile] = useState<{ url: string; type: string } | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimer = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -35,9 +36,10 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
 
     const handleSend = () => {
         const text = input.trim();
-        if (!text) return;
-        sendMessage(text);
+        if (!text && !pendingFile) return;
+        sendMessage(text, pendingFile?.url, pendingFile?.type || undefined);
         setInput("");
+        setPendingFile(null);
         sendTyping(false);
     };
 
@@ -75,7 +77,7 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
             });
 
             if (res.data.success) {
-                sendMessage("", res.data.url, res.data.type);
+                setPendingFile({ url: res.data.url, type: res.data.type });
             }
         } catch (err: any) {
             toast.error(err.response?.data?.message || "File upload failed");
@@ -243,6 +245,29 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
 
             {/* Input */}
             <div className="px-4 py-3 border-t border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
+                {pendingFile && (
+                    <div className="mb-2 p-2 bg-[var(--bg-elevated)] rounded-xl border border-[var(--border)] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/5 shrink-0">
+                            {pendingFile.type === "image" ? (
+                                <img src={pendingFile.url} className="w-full h-full object-cover" alt="preview" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Play size={16} className="text-[var(--accent)]" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-[var(--text)] truncate">Attached {pendingFile.type}</p>
+                            <p className="text-[10px] text-[var(--text-muted)]">Click send to share</p>
+                        </div>
+                        <button 
+                            onClick={() => setPendingFile(null)}
+                            className="p-1.5 rounded-full hover:bg-red-500/10 hover:text-red-500 transition-all"
+                        >
+                            <Loader2 size={16} className="rotate-45" /> 
+                        </button>
+                    </div>
+                )}
                 <div className="flex items-end gap-2 bg-[var(--bg-elevated)] rounded-[var(--radius-lg)] px-3 py-2 border border-[var(--border)] focus-within:border-[var(--accent)] transition-all relative">
                     <input
                         type="file"
