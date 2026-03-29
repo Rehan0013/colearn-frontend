@@ -9,6 +9,7 @@ interface Props {
     startPomodoro: (mode?: string) => void;
     pausePomodoro: () => void;
     resetPomodoro: (mode?: string) => void;
+    isAdmin?: boolean;
 }
 
 const modeConfig: Record<PomodoroMode, { label: string; color: string }> = {
@@ -17,7 +18,7 @@ const modeConfig: Record<PomodoroMode, { label: string; color: string }> = {
     long_break:  { label: "Long Break",  color: "text-amber-500" },
 };
 
-export const Pomodoro = ({ startPomodoro, pausePomodoro, resetPomodoro }: Props) => {
+export const Pomodoro = ({ startPomodoro, pausePomodoro, resetPomodoro, isAdmin = false }: Props) => {
     const pomodoro = useSelector((s: RootState) => s.pomodoro);
     
     // Safety guard
@@ -45,12 +46,14 @@ export const Pomodoro = ({ startPomodoro, pausePomodoro, resetPomodoro }: Props)
                 {(Object.keys(modeConfig) as PomodoroMode[]).map((m) => (
                     <button
                         key={m}
+                        disabled={!isAdmin}
                         onClick={() => resetPomodoro(m)}
                         className={cn(
                             "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
                             mode === m
                                 ? "bg-[var(--bg-surface)] text-[var(--text)] shadow-[var(--shadow)]"
-                                : "text-[var(--text-muted)] hover:text-[var(--text)]"
+                                : "text-[var(--text-muted)] hover:text-[var(--text)]",
+                            !isAdmin && "opacity-50 cursor-not-allowed"
                         )}
                     >
                         {modeConfig[m].label}
@@ -94,15 +97,24 @@ export const Pomodoro = ({ startPomodoro, pausePomodoro, resetPomodoro }: Props)
             {/* Controls */}
             <div className="flex items-center gap-3">
                 <button
+                    disabled={!isAdmin}
                     onClick={() => resetPomodoro(mode)}
-                    className="p-2 rounded-full text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] transition-all"
-                    title="Reset"
+                    className={cn(
+                        "p-2 rounded-full text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] transition-all",
+                        !isAdmin && "opacity-50 cursor-not-allowed"
+                    )}
+                    title={isAdmin ? "Reset" : "Only admins can reset"}
                 >
                     <RotateCcw size={16} />
                 </button>
                 <button
+                    disabled={!isAdmin}
                     onClick={() => isRunning ? pausePomodoro() : startPomodoro(mode)}
-                    className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:opacity-90 transition-all shadow-[var(--shadow-md)]"
+                    className={cn(
+                        "w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center hover:opacity-90 transition-all shadow-[var(--shadow-md)]",
+                        !isAdmin && "opacity-50 cursor-not-allowed"
+                    )}
+                    title={isAdmin ? (isRunning ? "Pause" : "Start") : "Only admins can control timer"}
                 >
                     {isRunning ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
                 </button>

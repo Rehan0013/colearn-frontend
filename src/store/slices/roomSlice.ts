@@ -80,6 +80,18 @@ export const deleteRoom = createAsyncThunk(
     }
 );
 
+export const kickMember = createAsyncThunk(
+    "room/kick",
+    async ({ roomId, memberId }: { roomId: string; memberId: string }, { rejectWithValue }) => {
+        try {
+            await roomApi.delete(`/api/rooms/${roomId}/members/${memberId}`);
+            return memberId;
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || "Failed to kick member");
+        }
+    }
+);
+
 const roomSlice = createSlice({
     name: "room",
     initialState,
@@ -147,6 +159,9 @@ const roomSlice = createSlice({
             .addCase(deleteRoom.fulfilled, (state, action) => {
                 if (state.current?._id === action.payload) state.current = null;
                 state.list = state.list.filter(r => r._id !== action.payload);
+            })
+            .addCase(kickMember.fulfilled, (state, action) => {
+                state.presenceUsers = state.presenceUsers.filter(u => u.userId !== action.payload);
             });
     },
 });
