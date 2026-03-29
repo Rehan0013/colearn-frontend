@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { Send, Paperclip, Smile, Loader2, Play, Volume2, Maximize2 } from "lucide-react";
+import { Send, Paperclip, Smile, Loader2, Play, Volume2, Maximize2, X } from "lucide-react";
 import type { RootState } from "@/store";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn, timeAgo } from "@/lib/utils";
@@ -25,9 +25,14 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
     const [hoveredMsg, setHoveredMsg] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [pendingFile, setPendingFile] = useState<{ url: string; type: string } | null>(null);
+    const [mounted, setMounted] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Auto-scroll to bottom on new message
     useEffect(() => {
@@ -109,7 +114,7 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
                             "flex gap-2 group",
                             isMine(msg) && "flex-row-reverse"
                         )}
-                        onMouseEnter={() => setHoveredMsg(msg.id)}
+                        onMouseEnter={() => setHoveredMsg(msg.id || msg._id || null)}
                         onMouseLeave={() => setHoveredMsg(null)}
                     >
                         {/* Avatar */}
@@ -182,20 +187,21 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
                             </div>
 
                             {/* Reactions */}
-                            {Object.keys(msg.reactions ?? {}).length > 0 && (
-                                <div className="flex flex-wrap gap-1 px-1">
+                            {mounted && Object.keys(msg.reactions ?? {}).length > 0 && (
+                                <div className="flex flex-wrap gap-1 px-1 mt-1">
                                     {Object.entries(msg.reactions).map(([emoji, users]) => (
                                         <button
                                             key={emoji}
-                                            onClick={() => reactToMessage(msg.id, emoji)}
+                                            onClick={() => reactToMessage(msg.id || msg._id || "", emoji)}
                                             className={cn(
-                                                "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-all",
+                                                "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border transition-all",
                                                 users.includes(user?._id ?? "")
                                                     ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)]"
                                                     : "bg-[var(--bg-elevated)] border-[var(--border)] text-[var(--text)]"
                                             )}
                                         >
-                                            {emoji} <span>{users.length}</span>
+                                            <span className="select-none text-xs">{emoji}</span>
+                                            <span className="opacity-70">{users.length}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -203,18 +209,18 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
                         </div>
 
                         {/* Reaction picker on hover */}
-                        {hoveredMsg === msg.id && (
+                        {mounted && hoveredMsg === (msg.id || msg._id) && (
                             <div className={cn(
                                 "self-center flex gap-0.5 bg-[var(--bg-surface)] border border-[var(--border)] rounded-full px-2 py-1 shadow-[var(--shadow-md)]",
-                                "opacity-0 group-hover:opacity-100 transition-opacity"
+                                "opacity-0 group-hover:opacity-100 transition-opacity ml-2"
                             )}>
                                 {EMOJIS.map((e) => (
                                     <button
                                         key={e}
-                                        onClick={() => reactToMessage(msg.id, e)}
-                                        className="text-sm hover:scale-125 transition-transform"
+                                        onClick={() => reactToMessage(msg.id || msg._id || "", e)}
+                                        className="p-1 hover:scale-125 transition-transform"
                                     >
-                                        {e}
+                                        <span className="text-sm leading-none select-none">{e}</span>
                                     </button>
                                 ))}
                             </div>
@@ -264,7 +270,7 @@ export const Chat = ({ roomId, sendMessage, reactToMessage, sendTyping }: Props)
                             onClick={() => setPendingFile(null)}
                             className="p-1.5 rounded-full hover:bg-red-500/10 hover:text-red-500 transition-all"
                         >
-                            <Loader2 size={16} className="rotate-45" /> 
+                            <X size={16} /> 
                         </button>
                     </div>
                 )}

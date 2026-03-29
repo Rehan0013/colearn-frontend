@@ -25,7 +25,11 @@ const chatSlice = createSlice({
     initialState,
     reducers: {
         setMessages(state, action: PayloadAction<{ messages: Message[]; hasMore: boolean }>) {
-            state.messages = action.payload.messages;
+            // Standardize all messages to have 'id' (from either id or _id)
+            state.messages = action.payload.messages.map(m => ({
+                ...m,
+                id: m.id || m._id || ""
+            }));
             state.hasMore = action.payload.hasMore;
             state.loading = false;
         },
@@ -38,8 +42,15 @@ const chatSlice = createSlice({
             state.messages.push(action.payload);
         },
         updateReactions(state, action: PayloadAction<{ messageId: string; reactions: Record<string, string[]> }>) {
-            const msg = state.messages.find(m => m.id === action.payload.messageId || m._id === action.payload.messageId);
-            if (msg) msg.reactions = action.payload.reactions;
+            const { messageId, reactions } = action.payload;
+            const index = state.messages.findIndex(m => m.id === messageId || m._id === messageId);
+            if (index !== -1) {
+                // Return a new object for the message to guarantee re-render
+                state.messages[index] = {
+                    ...state.messages[index],
+                    reactions
+                };
+            }
         },
         setTypingUser(state, action: PayloadAction<{ userId: string; name: string; isTyping: boolean }>) {
             const { userId, name, isTyping } = action.payload;

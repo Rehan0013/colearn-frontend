@@ -77,9 +77,10 @@ export const useSocket = (roomId: string) => {
         socket.on("chat:receive", (msg) => {
             dispatch(addMessage(msg));
         });
-        socket.on("chat:react:update", ({ messageId, reactions }) =>
-            dispatch(updateReactions({ messageId, reactions }))
-        );
+        socket.on("chat:react:update", ({ messageId, reactions }) => {
+            console.log("Reaction update received:", messageId, reactions);
+            dispatch(updateReactions({ messageId, reactions }));
+        });
         socket.on("chat:typing:update", ({ userId, userData, isTyping }) =>
             dispatch(setTypingUser({ userId, name: userData?.name, isTyping }))
         );

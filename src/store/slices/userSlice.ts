@@ -10,7 +10,7 @@ interface UserState {
 
 const initialState: UserState = {
     data: null,
-    loading: false,
+    loading: true, // Initially true to avoid redirect race conditions on page load
     error: null,
 };
 
