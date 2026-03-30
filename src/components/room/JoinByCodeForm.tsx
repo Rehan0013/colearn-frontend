@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { roomApi } from "@/lib/api";
+import { joinRoomAction } from "@/actions/roomActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Hash } from "lucide-react";
@@ -16,18 +16,23 @@ export const JoinByCodeForm = ({ onSuccess }: Props) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (code.length !== 8) {
+        const trimmedCode = code.trim();
+        if (trimmedCode.length !== 8) {
             toast.error("Invite code must be 8 characters");
             return;
         }
         setLoading(true);
         try {
-            const res = await roomApi.post("/api/rooms/join", { inviteCode: code.trim() });
-            toast.success("Joined room!");
-            onSuccess();
-            router.push(`/rooms/${res.data.room._id}`);
+            const res = await joinRoomAction(trimmedCode);
+            if (res.success) {
+                toast.success("Joined room!");
+                onSuccess();
+                router.push(`/rooms/${res.data._id}`);
+            } else {
+                toast.error(res.error || "Invalid invite code");
+            }
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Invalid invite code");
+            toast.error("An unexpected error occurred");
         } finally {
             setLoading(false);
         }

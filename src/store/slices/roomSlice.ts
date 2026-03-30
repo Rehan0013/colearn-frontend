@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { 
     fetchPublicRoomsAction, 
     fetchMyRoomsAction, 
+    fetchCreatedRoomsAction,
     fetchRoomByIdAction, 
     updateRoomAction, 
     deleteRoomAction, 
@@ -10,7 +11,9 @@ import {
 import type { Room, PresenceUser } from "@/types";
 
 interface RoomState {
-    list: Room[];
+    list: Room[];        // Browse rooms
+    joinedList: Room[];  // Joined rooms
+    createdList: Room[]; // Created rooms
     current: Room | null;
     presenceUsers: PresenceUser[];
     loading: boolean;
@@ -20,6 +23,8 @@ interface RoomState {
 
 const initialState: RoomState = {
     list: [],
+    joinedList: [],
+    createdList: [],
     current: null,
     presenceUsers: [],
     loading: false,
@@ -36,10 +41,19 @@ export const fetchPublicRooms = createAsyncThunk(
     }
 );
 
-export const fetchMyRooms = createAsyncThunk(
-    "room/fetchMine",
+export const fetchJoinedRooms = createAsyncThunk(
+    "room/fetchJoined",
     async (_, { rejectWithValue }) => {
         const res = await fetchMyRoomsAction();
+        if (res.success) return res.data as Room[];
+        return rejectWithValue(res.error);
+    }
+);
+
+export const fetchCreatedRooms = createAsyncThunk(
+    "room/fetchCreated",
+    async (userId: string, { rejectWithValue }) => {
+        const res = await fetchCreatedRoomsAction(userId);
         if (res.success) return res.data as Room[];
         return rejectWithValue(res.error);
     }
@@ -117,15 +131,27 @@ const roomSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload as string;
             })
-            .addCase(fetchMyRooms.pending, (state) => {
+            .addCase(fetchJoinedRooms.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchMyRooms.fulfilled, (state, action) => {
+            .addCase(fetchJoinedRooms.fulfilled, (state, action) => {
                 state.loading = false;
-                state.list = action.payload;
+                state.joinedList = action.payload;
             })
-            .addCase(fetchMyRooms.rejected, (state, action) => {
+            .addCase(fetchJoinedRooms.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+            })
+            .addCase(fetchCreatedRooms.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchCreatedRooms.fulfilled, (state, action) => {
+                state.loading = false;
+                state.createdList = action.payload;
+            })
+            .addCase(fetchCreatedRooms.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
             })

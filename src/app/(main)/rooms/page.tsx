@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Search, Plus, Lock, Users, ArrowRight, Hash } from "lucide-react";
 import Link from "next/link";
-import { fetchPublicRooms } from "@/store/slices/roomSlice";
+import { useSearchParams, useRouter } from "next/navigation";
+import { fetchPublicRooms, fetchJoinedRooms, fetchCreatedRooms } from "@/store/slices/roomSlice";
 import type { RootState, AppDispatch } from "@/store";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -20,18 +21,48 @@ const SUBJECTS = ["All", "Mathematics", "Science", "History", "Language", "CS", 
 
 export default function RoomsPage() {
     const dispatch = useDispatch<AppDispatch>();
-    const { list: rooms, loading } = useSelector((s: RootState) => s.room);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // Get active tab from URL, default to 'browse'
+    const activeTab = (searchParams.get("tab") as "browse" | "joined" | "mine") || "browse";
+
+    const { 
+        list: publicRooms, 
+        joinedList, 
+        createdList, 
+        loading, 
+        error 
+    } = useSelector((s: RootState) => s.room);
+    const user = useSelector((s: RootState) => s.user.data);
+
     const [search, setSearch] = useState("");
     const [subject, setSubject] = useState("All");
     const [showCreate, setShowCreate] = useState(false);
     const [showJoin, setShowJoin] = useState(false);
-    const [tab, setTab] = useState<"browse" | "mine">("browse");
 
     useEffect(() => {
-        dispatch(fetchPublicRooms({ subject: subject !== "All" ? subject : undefined }));
-    }, [subject]);
+        if (activeTab === "browse") {
+            dispatch(fetchPublicRooms({ subject: subject !== "All" ? subject : undefined }));
+        } else if (activeTab === "joined") {
+            dispatch(fetchJoinedRooms());
+        } else if (activeTab === "mine" && user?._id) {
+            dispatch(fetchCreatedRooms(user._id));
+        }
+    }, [dispatch, activeTab, subject, user?._id]);
 
-    const filtered = rooms.filter((r) =>
+    const handleTabChange = (newTab: string) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("tab", newTab);
+        router.push(`/rooms?${params.toString()}`);
+    };
+
+    // Determine which list to show
+    const currentList = activeTab === "browse" ? publicRooms : 
+                        activeTab === "joined" ? joinedList : 
+                        createdList;
+
+    const filtered = currentList.filter((r) =>
         r.name.toLowerCase().includes(search.toLowerCase()) ||
         r.subject.toLowerCase().includes(search.toLowerCase())
     );
@@ -46,28 +77,32 @@ export default function RoomsPage() {
                 </h1>
                 <div className="flex gap-2">
                     <Button variant="secondary" size="sm" onClick={() => setShowJoin(true)}>
-                        <Hash size={14} /> Join by Code
+                        <Hash size={14} className="mr-1" /> Join by Code
                     </Button>
                     <Button size="sm" onClick={() => setShowCreate(true)}>
-                        <Plus size={14} /> Create Room
+                        <Plus size={14} className="mr-1" /> Create Room
                     </Button>
                 </div>
             </div>
 
             {/* ── Tabs ────────────────────────────────────────────────────── */}
             <div className="flex gap-1 bg-[var(--bg-elevated)] p-1 rounded-[var(--radius)] w-fit">
-                {(["browse", "mine"] as const).map((t) => (
+                {[
+                    { id: "browse", label: "Browse" },
+                    { id: "joined", label: "Joined Rooms" },
+                    { id: "mine", label: "My Rooms" }
+                ].map((t) => (
                     <button
-                        key={t}
-                        onClick={() => setTab(t)}
+                        key={t.id}
+                        onClick={() => handleTabChange(t.id)}
                         className={cn(
                             "px-4 py-1.5 rounded-[calc(var(--radius)-2px)] text-sm font-medium transition-all",
-                            tab === t
+                            activeTab === t.id
                                 ? "bg-[var(--bg-surface)] text-[var(--text)] shadow-[var(--shadow)]"
                                 : "text-[var(--text-muted)] hover:text-[var(--text)]"
                         )}
                     >
-                        {t === "browse" ? "Browse" : "My Rooms"}
+                        {t.label}
                     </button>
                 ))}
             </div>
@@ -76,28 +111,34 @@ export default function RoomsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                     <Input
-                        placeholder="Search rooms..."
+                        placeholder={
+                            activeTab === "browse" ? "Search public rooms..." :
+                            activeTab === "joined" ? "Search joined rooms..." :
+                            "Search my rooms..."
+                        }
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         leftIcon={<Search size={15} />}
                     />
                 </div>
-                <div className="flex gap-1.5 flex-wrap">
-                    {SUBJECTS.map((s) => (
-                        <button
-                            key={s}
-                            onClick={() => setSubject(s)}
-                            className={cn(
-                                "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
-                                subject === s
-                                    ? "bg-[var(--accent)] text-white border-[var(--accent)]"
-                                    : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                            )}
-                        >
-                            {s}
-                        </button>
-                    ))}
-                </div>
+                {activeTab === "browse" && (
+                    <div className="flex gap-1.5 flex-wrap">
+                        {SUBJECTS.map((s) => (
+                            <button
+                                key={s}
+                                onClick={() => setSubject(s)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                                    subject === s
+                                        ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                                        : "border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                                )}
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* ── Room grid ───────────────────────────────────────────────── */}
@@ -107,10 +148,27 @@ export default function RoomsPage() {
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
-                    <p className="text-[var(--text-muted)]">No rooms found.</p>
-                    <Button onClick={() => setShowCreate(true)}>
-                        <Plus size={14} /> Create one
-                    </Button>
+                    <div className="p-4 bg-[var(--bg-elevated)] rounded-full mb-2">
+                        <Users size={32} className="text-[var(--text-muted)]" />
+                    </div>
+                    <p className="text-[var(--text-muted)]">
+                        {search 
+                            ? `No rooms found matching "${search}"`
+                            : activeTab === "browse" 
+                                ? "No public rooms available right now." 
+                                : activeTab === "joined"
+                                    ? "You haven't joined any rooms yet."
+                                    : "You haven't created any rooms yet."}
+                    </p>
+                    {activeTab === "browse" ? (
+                        <Button onClick={() => setShowCreate(true)}>
+                            <Plus size={14} className="mr-1" /> Create one
+                        </Button>
+                    ) : (
+                        <Button variant="secondary" onClick={() => handleTabChange("browse")}>
+                            Browse Public Rooms
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">

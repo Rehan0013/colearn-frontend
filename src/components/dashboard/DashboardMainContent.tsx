@@ -32,11 +32,10 @@ export function DashboardMainContent({
                             <button
                                 key={r}
                                 onClick={() => onChartRangeChange(r)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                                    chartRange === r
+                                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${chartRange === r
                                         ? "bg-[var(--accent)] text-white"
                                         : "text-[var(--text-muted)] hover:bg-[var(--bg-elevated)]"
-                                }`}
+                                    }`}
                             >
                                 {r === "week" ? "7 days" : "30 days"}
                             </button>
@@ -52,7 +51,7 @@ export function DashboardMainContent({
             <Card>
                 <CardHeader>
                     <CardTitle>My Rooms</CardTitle>
-                    <Link href="/rooms" className="text-xs text-[var(--accent)] hover:underline">
+                    <Link href="/rooms?tab=joined" className="text-xs text-[var(--accent)] hover:underline">
                         View all
                     </Link>
                 </CardHeader>
@@ -61,7 +60,7 @@ export function DashboardMainContent({
                         <div className="flex flex-col items-center gap-3 py-6 text-center">
                             <BookOpen size={28} className="text-[var(--text-muted)]" />
                             <p className="text-sm text-[var(--text-muted)]">
-                                You haven't joined any rooms yet.
+                                You don't have any active rooms.
                             </p>
                             <Link href="/rooms">
                                 <Button size="sm" variant="outline">Browse Rooms</Button>

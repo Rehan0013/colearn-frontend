@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { roomApi } from "@/lib/api";
+import { createRoomAction, updateRoomAction } from "@/actions/roomActions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -53,16 +53,25 @@ export const CreateRoomForm = ({ onSuccess, initialData, isUpdate }: Props) => {
         setLoading(true);
         try {
             if (isUpdate && initialData?._id) {
-                await roomApi.patch(`/api/rooms/${initialData._id}`, { ...form, tags });
-                toast.success("Room updated!");
+                const res = await updateRoomAction(initialData._id, { ...form, tags });
+                if (res.success) {
+                    toast.success("Room updated!");
+                    onSuccess();
+                } else {
+                    toast.error(res.error || "Failed to update room");
+                }
             } else {
-                const res = await roomApi.post("/api/rooms", { ...form, tags });
-                toast.success("Room created!");
-                router.push(`/rooms/${res.data.room._id}`);
+                const res = await createRoomAction({ ...form, tags });
+                if (res.success) {
+                    toast.success("Room created!");
+                    onSuccess();
+                    router.push(`/rooms/${res.data._id}`);
+                } else {
+                    toast.error(res.error || "Failed to create room");
+                }
             }
-            onSuccess();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || `Failed to ${isUpdate ? "update" : "create"} room`);
+            toast.error("An unexpected error occurred");
         } finally {
             setLoading(false);
         }

@@ -18,7 +18,44 @@ export async function fetchMyRoomsAction() {
     const res = await apiGet(`${ROOM_URL}/api/rooms/my-rooms`);
     return { success: true, data: res.rooms };
   } catch (err: any) {
-    return { success: false, error: err.message || "Failed to fetch your rooms" };
+    return { success: false, error: err.message || "Failed to fetch joined rooms" };
+  }
+}
+
+export async function fetchCreatedRoomsAction(userId: string) {
+  try {
+    // Backend endpoint uses userId but controller uses req.user.id
+    const res = await apiGet(`${ROOM_URL}/api/rooms/user/${userId}`);
+    return { success: true, data: res.rooms };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to fetch created rooms" };
+  }
+}
+
+export async function createRoomAction(data: any) {
+  try {
+    const res = await apiPost(`${ROOM_URL}/api/rooms`, data);
+    return { success: true, data: res.room };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to create room" };
+  }
+}
+
+export async function joinRoomAction(inviteCode: string) {
+  try {
+    const res = await apiPost(`${ROOM_URL}/api/rooms/join`, { inviteCode });
+    return { success: true, data: res.room };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to join room" };
+  }
+}
+
+export async function joinPublicRoomAction(roomId: string) {
+  try {
+    const res = await apiPost(`${ROOM_URL}/api/rooms/${roomId}/join`);
+    return { success: true, data: res.room };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to join public room" };
   }
 }
 
