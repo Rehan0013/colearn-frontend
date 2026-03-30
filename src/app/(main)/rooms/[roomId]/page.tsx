@@ -25,9 +25,9 @@ import { Panel, Group, Separator } from "react-resizable-panels";
 type ActivePanel = "chat" | "notes" | "timer" | "people";
 
 const panels = [
-    { id: "chat" as ActivePanel,   label: "Chat",   icon: MessageSquare },
-    { id: "notes" as ActivePanel,  label: "Notes",  icon: FileText },
-    { id: "timer" as ActivePanel,  label: "Timer",  icon: Timer },
+    { id: "chat" as ActivePanel, label: "Chat", icon: MessageSquare },
+    { id: "notes" as ActivePanel, label: "Notes", icon: FileText },
+    { id: "timer" as ActivePanel, label: "Timer", icon: Timer },
     { id: "people" as ActivePanel, label: "People", icon: Users },
 ];
 
@@ -38,19 +38,20 @@ export default function RoomPage() {
     const roomId = params.roomId as string;
 
     const user = useSelector((s: RootState) => s.user.data);
-    const { current: room, loading, presenceUsers, isConnected } = useSelector((s: RootState) => s.room);
+    const { current: room, loading, presenceUsers, isConnected, error } = useSelector((s: RootState) => s.room);
     const [activePanel, setActivePanel] = useState<ActivePanel>("chat");
     const [showSettings, setShowSettings] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [endingSession, setEndingSession] = useState(false);
 
-    const isAdmin = room?.createdBy && (
-        typeof room.createdBy === "string" 
-            ? room.createdBy === user?._id 
-            : (room.createdBy as any)._id === user?._id
-    );
+    const isAdmin = room?.members?.some(m => {
+        const mUserId = typeof m.user === 'string' ? m.user : m.user?._id;
+        return String(mUserId) === String(user?._id) && m.role === "admin";
+    }) || (room?.createdBy && (
+        String(typeof room.createdBy === 'string' ? room.createdBy : (room.createdBy as any)._id) === String(user?._id)
+    ));
 
-    const socketActions = useSocket(roomId);
+    const socketActions = useSocket(roomId, !!isAdmin);
 
     useEffect(() => {
         dispatch(fetchRoomById(roomId));
@@ -60,6 +61,13 @@ export default function RoomPage() {
             dispatch(clearPomodoro());
         };
     }, [roomId, dispatch]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            router.push("/dashboard");
+        }
+    }, [error, router]);
 
     const handleEndSession = async () => {
         setEndingSession(true);
@@ -122,7 +130,19 @@ export default function RoomPage() {
                                 {isConnected ? "Live" : "Offline"}
                             </span>
                         </div>
+                        {!room.isActive && (
+                            <div className="flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-950/30 border border-red-200 dark:border-red-900/30">
+                                <span className="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase tracking-tighter">
+                                    Deactivated
+                                </span>
+                            </div>
+                        )}
                     </div>
+                </div>
+
+                <div className="hidden md:flex ml-4 px-3 py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-full items-center gap-2">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Code:</span>
+                    <span className="text-xs font-mono font-bold text-[var(--accent)]">{room.inviteCode}</span>
                 </div>
 
                 <div className="ml-auto flex items-center gap-2">
@@ -147,9 +167,9 @@ export default function RoomPage() {
                         </div>
                     </div>
 
-                    <Button 
-                        variant="primary" 
-                        size="sm" 
+                    <Button
+                        variant="primary"
+                        size="sm"
                         loading={endingSession}
                         onClick={handleEndSession}
                         className="h-8 text-xs px-3"
@@ -170,7 +190,7 @@ export default function RoomPage() {
 
             {/* ── Main content ─────────────────────────────────────────────── */}
             <div className="flex-1 flex flex-col overflow-hidden relative">
-                
+
                 {/* Desktop: Resizable Panels */}
                 <div className="hidden lg:flex flex-1 overflow-hidden">
                     <Group orientation="horizontal">
@@ -207,9 +227,9 @@ export default function RoomPage() {
                 {/* Mobile: Tabbed View */}
                 <div className="flex lg:hidden flex-col flex-1 overflow-hidden">
                     <div className="flex-1 overflow-hidden bg-[var(--bg-surface)]">
-                        {activePanel === "chat"   && <Chat roomId={roomId} {...socketActions} />}
-                        {activePanel === "notes"  && <Notes roomId={roomId} updateNote={socketActions.updateNote} />}
-                        {activePanel === "timer"  && <Pomodoro {...socketActions} isAdmin={isAdmin} />}
+                        {activePanel === "chat" && <Chat roomId={roomId} {...socketActions} />}
+                        {activePanel === "notes" && <Notes roomId={roomId} updateNote={socketActions.updateNote} />}
+                        {activePanel === "timer" && <Pomodoro {...socketActions} isAdmin={isAdmin} />}
                         {activePanel === "people" && <PresenceBar users={presenceUsers} isAdmin={isAdmin} roomId={roomId} />}
                     </div>
 
@@ -221,8 +241,8 @@ export default function RoomPage() {
                                 onClick={() => setActivePanel(p.id)}
                                 className={cn(
                                     "flex flex-col items-center gap-1.5 min-w-[4rem] transition-all relative py-1",
-                                    activePanel === p.id 
-                                        ? "text-[var(--accent)]" 
+                                    activePanel === p.id
+                                        ? "text-[var(--accent)]"
                                         : "text-[var(--text-muted)] hover:text-[var(--text)]"
                                 )}
                             >
@@ -274,12 +294,6 @@ export default function RoomPage() {
                                 Delete Room Permanently
                             </Button>
                         </div>
-                    </div>
-
-                    <div className="text-center pb-2">
-                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest bg-[var(--bg-elevated)] py-1.5 px-3 rounded-full inline-block border border-[var(--border)]">
-                            Invite Code: <span className="text-[var(--accent)] font-bold ml-1">{room.inviteCode}</span>
-                        </p>
                     </div>
                 </div>
             </Modal>

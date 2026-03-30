@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { connectSocket, disconnectSocket, getSocket } from "@/lib/socket";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@/store/slices/chatSlice";
 import {
     setPresenceUsers, addPresenceUser, removePresenceUser, setSocketConnected,
+    fetchRoomById,
 } from "@/store/slices/roomSlice";
 import { setPomodoroState, tick } from "@/store/slices/pomodoroSlice";
 import { remoteEdit } from "@/store/slices/notesSlice";
@@ -14,8 +16,9 @@ import { addNotification } from "@/store/slices/notificationSlice";
 import type { RootState } from "@/store";
 import toast from "react-hot-toast";
 
-export const useSocket = (roomId: string) => {
+export const useSocket = (roomId: string, isAdmin: boolean) => {
     const dispatch = useDispatch();
+    const router = useRouter();
     const user = useSelector((s: RootState) => s.user.data);
     const joined = useRef(false);
 
@@ -29,6 +32,7 @@ export const useSocket = (roomId: string) => {
             userId: user._id,
             name: `${user.fullName.firstName} ${user.fullName.lastName}`,
             avatar: user.avatar,
+            role: isAdmin ? "admin" : "member",
         };
 
         const joinAndSync = () => {
@@ -78,7 +82,6 @@ export const useSocket = (roomId: string) => {
             dispatch(addMessage(msg));
         });
         socket.on("chat:react:update", ({ messageId, reactions }) => {
-            console.log("Reaction update received:", messageId, reactions);
             dispatch(updateReactions({ messageId, reactions }));
         });
         socket.on("chat:typing:update", ({ userId, userData, isTyping }) =>
@@ -86,8 +89,12 @@ export const useSocket = (roomId: string) => {
         );
 
         // ── Pomodoro ───────────────────────────────────────────────────────────
-        socket.on("pomodoro:state", (state) => dispatch(setPomodoroState(state)));
-        socket.on("pomodoro:tick", ({ remaining }) => dispatch(tick(remaining)));
+        socket.on("pomodoro:state", (state) => {
+            dispatch(setPomodoroState(state));
+        });
+        socket.on("pomodoro:tick", ({ remaining }) => {
+            dispatch(tick(remaining));
+        });
         socket.on("pomodoro:done", ({ mode }) => {
             const label = mode === "focus" ? "Focus" : "Break";
             toast(`${label} session complete!`, {
@@ -108,6 +115,31 @@ export const useSocket = (roomId: string) => {
             dispatch(remoteEdit({ content, editedBy: editedBy?.userId ?? "" }))
         );
 
+        // ── Room Status / Access ──────────────────────────────────────────────
+        socket.on("room:kicked", ({ userId, message }) => {
+            if (userId === user?._id) {
+                toast.error(message || "You have been kicked from the room");
+                router.push("/dashboard");
+            }
+        });
+
+        socket.on("room:deleted", ({ message }) => {
+            toast.error(message || "This room has been deleted");
+            router.push("/dashboard");
+        });
+
+        socket.on("room:member:promoted", ({ newAdminId }) => {
+            // Re-fetch room data to update admin status and members list
+            dispatch(fetchRoomById(roomId) as any);
+            if (newAdminId === user?._id) {
+                toast.success("You have been promoted to room administrator!", { icon: "👑" });
+            }
+        });
+
+        socket.on("error", ({ message }) => {
+            toast.error(message || "An error occurred");
+        });
+
         // ── Cleanup ────────────────────────────────────────────────────────────
         return () => {
             socket.emit("presence:leave", { roomId });
@@ -125,6 +157,10 @@ export const useSocket = (roomId: string) => {
             socket.off("pomodoro:done");
             socket.off("notes:content");
             socket.off("notes:broadcast");
+            socket.off("room:kicked");
+            socket.off("room:deleted");
+            socket.off("room:member:promoted");
+            socket.off("error");
             disconnectSocket();
             joined.current = false;
         };
@@ -153,14 +189,17 @@ export const useSocket = (roomId: string) => {
         getSocket().emit("notes:update", { roomId, content, userData });
     };
 
-    const startPomodoro = (mode = "focus") =>
+    const startPomodoro = (mode = "focus") => {
         getSocket().emit("pomodoro:start", { roomId, mode });
+    };
 
-    const pausePomodoro = () =>
+    const pausePomodoro = () => {
         getSocket().emit("pomodoro:pause", { roomId });
+    };
 
-    const resetPomodoro = (mode = "focus") =>
+    const resetPomodoro = (mode = "focus") => {
         getSocket().emit("pomodoro:reset", { roomId, mode });
+    };
 
     return {
         sendMessage,

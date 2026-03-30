@@ -49,7 +49,8 @@ export const fetchRoomById = createAsyncThunk(
     async (roomId: string, { rejectWithValue }) => {
         try {
             const res = await roomApi.get(`/api/rooms/${roomId}`);
-            return res.data.room as Room;
+            // Defensive check: Handle both wrapped { room: ... } and direct room objects
+            return (res.data.room || res.data) as Room;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message);
         }
@@ -61,7 +62,7 @@ export const updateRoom = createAsyncThunk(
     async ({ roomId, data }: { roomId: string; data: Partial<Room> }, { rejectWithValue }) => {
         try {
             const res = await roomApi.patch(`/api/rooms/${roomId}`, data);
-            return res.data.room as Room;
+            return (res.data.room || res.data) as Room;
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message || "Failed to update room");
         }
