@@ -1,5 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { sessionApi } from "@/lib/api";
+import { 
+    fetchStatsAction, 
+    fetchChartDataAction, 
+    fetchHistoryAction 
+} from "@/actions/sessionActions";
 import type { UserStats, ChartDataPoint, Session } from "@/types";
 
 interface SessionState {
@@ -21,36 +25,27 @@ const initialState: SessionState = {
 export const fetchStats = createAsyncThunk(
     "session/fetchStats",
     async (_, { rejectWithValue }) => {
-        try {
-            const res = await sessionApi.get("/api/sessions/stats");
-            return res.data.stats as UserStats;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to fetch stats");
-        }
+        const res = await fetchStatsAction();
+        if (res.success) return res.stats as UserStats;
+        return rejectWithValue(res.error);
     }
 );
 
 export const fetchChartData = createAsyncThunk(
     "session/fetchChartData",
     async (range: "week" | "month", { rejectWithValue }) => {
-        try {
-            const res = await sessionApi.get(`/api/sessions/charts?range=${range}`);
-            return res.data.data as ChartDataPoint[];
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to fetch chart data");
-        }
+        const res = await fetchChartDataAction(range);
+        if (res.success) return res.data as ChartDataPoint[];
+        return rejectWithValue(res.error);
     }
 );
 
 export const fetchHistory = createAsyncThunk(
     "session/fetchHistory",
     async ({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}, { rejectWithValue }) => {
-        try {
-            const res = await sessionApi.get(`/api/sessions/history?page=${page}&limit=${limit}`);
-            return res.data; // Includes sessions and pagination
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to fetch history");
-        }
+        const res = await fetchHistoryAction({ page, limit });
+        if (res.success) return res.data; // Includes sessions and pagination
+        return rejectWithValue(res.error);
     }
 );
 

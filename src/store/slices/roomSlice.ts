@@ -1,5 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { roomApi } from "@/lib/api";
+import { 
+    fetchPublicRoomsAction, 
+    fetchMyRoomsAction, 
+    fetchRoomByIdAction, 
+    updateRoomAction, 
+    deleteRoomAction, 
+    kickMemberAction 
+} from "@/actions/roomActions";
 import type { Room, PresenceUser } from "@/types";
 
 interface RoomState {
@@ -23,73 +30,54 @@ const initialState: RoomState = {
 export const fetchPublicRooms = createAsyncThunk(
     "room/fetchPublic",
     async (params: { subject?: string; page?: number } = {}, { rejectWithValue }) => {
-        try {
-            const res = await roomApi.get("/api/rooms", { params });
-            return res.data.rooms as Room[];
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to fetch rooms");
-        }
+        const res = await fetchPublicRoomsAction(params);
+        if (res.success) return res.data as Room[];
+        return rejectWithValue(res.error);
     }
 );
 
 export const fetchMyRooms = createAsyncThunk(
     "room/fetchMine",
     async (_, { rejectWithValue }) => {
-        try {
-            const res = await roomApi.get("/api/rooms/my-rooms");
-            return res.data.rooms as Room[];
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message);
-        }
+        const res = await fetchMyRoomsAction();
+        if (res.success) return res.data as Room[];
+        return rejectWithValue(res.error);
     }
 );
 
 export const fetchRoomById = createAsyncThunk(
     "room/fetchById",
     async (roomId: string, { rejectWithValue }) => {
-        try {
-            const res = await roomApi.get(`/api/rooms/${roomId}`);
-            // Defensive check: Handle both wrapped { room: ... } and direct room objects
-            return (res.data.room || res.data) as Room;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message);
-        }
+        const res = await fetchRoomByIdAction(roomId);
+        if (res.success) return res.data as Room;
+        return rejectWithValue(res.error);
     }
 );
 
 export const updateRoom = createAsyncThunk(
     "room/update",
     async ({ roomId, data }: { roomId: string; data: Partial<Room> }, { rejectWithValue }) => {
-        try {
-            const res = await roomApi.patch(`/api/rooms/${roomId}`, data);
-            return (res.data.room || res.data) as Room;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to update room");
-        }
+        const res = await updateRoomAction(roomId, data);
+        if (res.success) return res.data as Room;
+        return rejectWithValue(res.error);
     }
 );
 
 export const deleteRoom = createAsyncThunk(
     "room/delete",
     async (roomId: string, { rejectWithValue }) => {
-        try {
-            await roomApi.delete(`/api/rooms/${roomId}`);
-            return roomId;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to delete room");
-        }
+        const res = await deleteRoomAction(roomId);
+        if (res.success) return roomId;
+        return rejectWithValue(res.error);
     }
 );
 
 export const kickMember = createAsyncThunk(
     "room/kick",
     async ({ roomId, memberId }: { roomId: string; memberId: string }, { rejectWithValue }) => {
-        try {
-            await roomApi.delete(`/api/rooms/${roomId}/members/${memberId}`);
-            return memberId;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to kick member");
-        }
+        const res = await kickMemberAction(roomId, memberId);
+        if (res.success) return memberId;
+        return rejectWithValue(res.error);
     }
 );
 

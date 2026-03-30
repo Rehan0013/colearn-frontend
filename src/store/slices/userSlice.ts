@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { authApi } from "@/lib/api";
+import { fetchCurrentUserAction, logoutUserAction } from "@/actions/authActions";
 import type { User } from "@/types";
 
 interface UserState {
@@ -19,17 +19,16 @@ const initialState: UserState = {
 export const fetchCurrentUser = createAsyncThunk(
     "user/fetchCurrent",
     async (_, { rejectWithValue }) => {
-        try {
-            const res = await authApi.get("/api/auth/current-user");
-            return res.data.user as User;
-        } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Failed to fetch user");
-        }
+        const res = await fetchCurrentUserAction();
+        if (res.success) return res.user as User;
+        return rejectWithValue(res.error);
     }
 );
 
-export const logoutUser = createAsyncThunk("user/logout", async () => {
-    await authApi.get("/api/auth/logout");
+export const logoutUser = createAsyncThunk("user/logout", async (_, { rejectWithValue }) => {
+    const res = await logoutUserAction();
+    if (!res.success) return rejectWithValue(res.error);
+    return true;
 });
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
