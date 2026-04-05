@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/index";
-import { Spinner } from "@/components/ui/index";
+import { RoomsSkeleton } from "@/components/room/RoomsSkeleton";
 import { Modal } from "@/components/ui/index";
 import { CreateRoomForm } from "@/components/room/CreateRoomForm";
 import { JoinByCodeForm } from "@/components/room/JoinByCodeForm";
@@ -143,9 +143,7 @@ export default function RoomsPage() {
 
             {/* ── Room grid ───────────────────────────────────────────────── */}
             {loading ? (
-                <div className="flex justify-center py-16">
-                    <Spinner size="lg" />
-                </div>
+                <RoomsSkeleton />
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
                     <div className="p-4 bg-[var(--bg-elevated)] rounded-full mb-2">

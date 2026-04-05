@@ -22,15 +22,27 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
     }, [loading, user]);
 
-    if (loading || !user) {
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
-                <div className="flex flex-col items-center gap-3">
-                    <span className="font-display text-2xl font-bold text-[var(--text)]">
-                        co<span className="text-[var(--accent)]">learn</span>
-                    </span>
-                    <Spinner size="md" />
-                </div>
+            <div className="min-h-screen bg-[var(--bg)]">
+                <header className="sticky top-0 z-40 bg-[var(--bg-surface)] border-b border-[var(--border)] shadow-[var(--shadow)]">
+                    <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+                        <div className="font-display text-xl font-bold text-[var(--text)]">
+                            co<span className="text-[var(--accent)]">learn</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-full bg-[var(--border)] animate-pulse" />
+                            <div className="w-8 h-8 rounded-full bg-[var(--border)] animate-pulse" />
+                        </div>
+                    </div>
+                </header>
+                <main className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-6">
+                    <div className="w-48 h-8 bg-[var(--border)] rounded-lg animate-pulse" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 h-64 bg-[var(--border)] rounded-2xl animate-pulse opacity-50" />
+                        <div className="h-64 bg-[var(--border)] rounded-2xl animate-pulse opacity-50" />
+                    </div>
+                </main>
             </div>
         );
     }

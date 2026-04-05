@@ -122,13 +122,12 @@ h1, h2, h3, h4, h5, h6 {
         backdrop-filter: blur(8px);
     }
 
-    /* Animations */
-    @keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
     }
 
-    .animate-fade-in-up {
-        animation: fade-in-up 0.4s ease-out forwards;
+    .animate-shimmer {
+        animation: shimmer 2s infinite;
     }
 }

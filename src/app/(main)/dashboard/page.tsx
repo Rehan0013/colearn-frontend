@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchStats, fetchChartData } from "@/store/slices/sessionSlice";
 import { fetchMyRoomsAction } from "@/actions/roomActions";
-import { Spinner } from "@/components/ui/index";
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { DashboardMainContent } from "@/components/dashboard/DashboardMainContent";
@@ -45,11 +45,7 @@ export default function DashboardPage() {
     }, []);
 
     if (statsLoading && !stats) {
-        return (
-            <div className="flex justify-center py-20">
-                <Spinner size="lg" />
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     const firstName = user?.fullName.firstName ?? "";
