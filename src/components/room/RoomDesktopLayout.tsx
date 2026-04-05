@@ -42,10 +42,10 @@ export function RoomDesktopLayout({
 
                 {/* Pomodoro & Presence Panel */}
                 <Panel defaultSize={25} minSize={20} collapsible={true} className="flex flex-col glass rounded-xl overflow-hidden shadow-sm border border-white/20 dark:border-white/5">
-                    <div className="flex-1 border-b border-[var(--border)] overflow-hidden">
+                    <div className="flex-[1.4] border-b border-[var(--border)] overflow-y-auto custom-scrollbar">
                         <Pomodoro {...socketActions} isAdmin={isAdmin} />
                     </div>
-                    <div className="flex-1 overflow-auto custom-scrollbar">
+                    <div className="flex-1 overflow-hidden">
                         <PresenceBar users={presenceUsers} isAdmin={isAdmin} roomId={roomId} />
                     </div>
                 </Panel>

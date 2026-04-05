@@ -35,7 +35,7 @@ export const Pomodoro = memo(({ startPomodoro, pausePomodoro, resetPomodoro, isA
     const offset = progress * circ;
 
     return (
-        <div className="flex flex-col items-center justify-between p-6 h-full bg-transparent">
+        <div className="flex flex-col items-center justify-between p-4 h-full bg-transparent min-h-[320px]">
             <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-elevated)] rounded-full border border-[var(--border)] shadow-sm">
                     <Timer size={12} className="text-[var(--text-muted)]" />
@@ -66,7 +66,7 @@ export const Pomodoro = memo(({ startPomodoro, pausePomodoro, resetPomodoro, isA
             </div>
 
             {/* Circular Timer */}
-            <div className="relative group/timer my-4">
+            <div className="relative group/timer my-2">
                 <motion.div
                     animate={{ scale: isRunning ? [1, 1.02, 1] : 1 }}
                     transition={{ duration: 2, repeat: Infinity }}
@@ -114,8 +114,8 @@ export const Pomodoro = memo(({ startPomodoro, pausePomodoro, resetPomodoro, isA
             </div>
 
             {/* Controls */}
-            <div className="flex flex-col items-center gap-4 w-full">
-                <div className="flex items-center gap-6">
+            <div className="flex flex-col items-center gap-3 w-full">
+                <div className="flex items-center gap-5">
                     <button
                         disabled={!isAdmin}
                         onClick={() => resetPomodoro(mode)}
