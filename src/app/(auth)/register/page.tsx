@@ -5,7 +5,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff, Sun, Moon, Loader2, User } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sun, Moon, Loader2, User, Camera, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTheme } from "next-themes";
 import { useDispatch } from "react-redux";
@@ -82,6 +82,27 @@ export default function RegisterPage() {
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
+    const [profileImage, setProfileImage] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            return void toast.error("Image must be less than 5MB");
+        }
+
+        setProfileImage(file);
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+    };
+
+    const handleRemoveImage = () => {
+        setProfileImage(null);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -94,6 +115,7 @@ export default function RegisterPage() {
         try {
             const data = new FormData();
             Object.entries(form).forEach(([k, v]) => data.append(k, v));
+            if (profileImage) data.append("avatar", profileImage);
             await authApi.post("/api/auth/register", data, { headers: { "Content-Type": "multipart/form-data" } });
             setEmail(form.email);
             toast.success("OTP sent to your email!");
@@ -145,6 +167,7 @@ export default function RegisterPage() {
         try {
             const data = new FormData();
             Object.entries(form).forEach(([k, v]) => data.append(k, v));
+            if (profileImage) data.append("avatar", profileImage);
             await authApi.post("/api/auth/register", data, { headers: { "Content-Type": "multipart/form-data" } });
             toast.success("OTP resent!");
         } catch {
@@ -251,6 +274,50 @@ export default function RegisterPage() {
 
                             {/* Main Form */}
                             <form onSubmit={handleRegister} className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
+                                
+                                {/* Profile Image Upload */}
+                                <div className="flex flex-col items-center gap-3 mb-2">
+                                    <div className="relative group">
+                                        <div className={cn(
+                                            "w-24 h-24 rounded-full border-2 border-dashed border-[var(--border)] flex items-center justify-center overflow-hidden transition-all bg-[var(--bg-surface)] group-hover:border-[var(--accent)] group-hover:bg-[var(--bg-elevated)]",
+                                            previewUrl && "border-solid border-[var(--accent)] border-2"
+                                        )}>
+                                            {previewUrl ? (
+                                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="flex flex-col items-center text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors">
+                                                    <Camera size={24} />
+                                                    <span className="text-[10px] font-bold uppercase mt-1">Upload</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleImageChange} 
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            title="Choose profile picture"
+                                        />
+
+                                        {previewUrl && (
+                                            <button 
+                                                type="button" 
+                                                onClick={handleRemoveImage}
+                                                className="absolute -top-1 -right-1 bg-[var(--red)] text-white p-1 rounded-full shadow-lg hover:scale-110 transition-transform z-20"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                        
+                                        {/* Hover Overlay */}
+                                        {!previewUrl && (
+                                            <div className="absolute inset-0 bg-[var(--accent)]/5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-[var(--text-muted)] font-medium">Add a profile picture (optional)</p>
+                                </div>
+
                                 <div className="flex flex-col sm:flex-row gap-5 sm:gap-4">
                                     <Inp 
                                         label="First name" 
